@@ -76,7 +76,7 @@ bool loadMedia()
 	bool success = true;
 
 	//Load splash image
-	gHelloWorld = SDL_LoadBMP("C:/Users/vulture/Downloads/lol.bmp");
+	gHelloWorld = SDL_LoadBMP("lol.bmp");//Set it to the convinient path
 	if (gHelloWorld == NULL)
 	{
 		printf("Unable to load image %s! SDL Error: %s\n", "02_getting_an_image_on_the_screen/hello_world.bmp", SDL_GetError());
