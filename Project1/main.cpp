@@ -3,29 +3,79 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stack>
-#include "maze.h"
 #include <SDL.h>
 #include "Griid.h"
+
+#define WIDTH      600
+#define HEIGHT     600
+#define ROWS       100
+#define COLUMNS    100
+#define ROOM_WIDTH (WIDTH / ROWS)
 
 
 using namespace std;
 
+bool unvisitedCells(vector <Cell> mazeGrid) {
+	for (Uint32 i = 0; i < mazeGrid.size(); i++) {
+		if (!mazeGrid[i].isVisited()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+int checkNeighbours(vector <Cell> maze, Cell r) {
+	int x = r.getX();
+	int y = r.getY();
+	vector < Cell > neighbours;
+	if (x > 0 && !maze[(x-1 ) * ROWS + y].isVisited() ) {
+		neighbours.push_back(maze[(x-1) * ROWS + y]);
+	}
+	if ( x < ROWS-1 && !maze[(x + 1) * ROWS + y].isVisited() ) {
+		neighbours.push_back(maze[(x + 1) * ROWS + y]);
+	}
+	if (y < COLUMNS-1 && !maze[x * ROWS + y + 1].isVisited()  ) {
+		neighbours.push_back(maze[x * ROWS + y + 1]);
+	}
+	if (y > 0 && !maze[x * ROWS + y-1 ].isVisited()) {
+		neighbours.push_back(maze[x * ROWS + y-1 ]);
+	}
+	else if (neighbours.size() < 1){
+		return -1;
+	}
+
+	int randomIdx =rand() % neighbours.size();
+	int nxt = neighbours[randomIdx].getY() + neighbours[randomIdx].getX() * ROWS;
+	return nxt;
+}
+
 
 
 int main(int argc, char *argv[]) {
-	init();
+	/*srand(time(NULL));*/
+	SDL_Init(SDL_INIT_EVERYTHING);
+	SDL_Window *window = NULL;
+	SDL_Renderer *renderer = NULL;
 
-	Uint32 starting_tick;
+	SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, SDL_WINDOW_RESIZABLE, &window, &renderer);
+
+	if (window == NULL) {
+		std::cout << "There was an error initializing the window! :(\n"
+			<< SDL_GetError();
+		return 1;
+	}
+
+	/*Uint32 starting_tick;*/
 	SDL_Event event;
 	bool running = true;
-	//gameplay
+
 	vector < Cell > mazeGrid;
-	stack < Cell* > CellStack;
+	stack < Cell* > roomStack;
 
 	for (int i = 0; i < ROWS; i++) {
 		for (int j = 0; j < COLUMNS; j++) {
-			Cell newCell(i, j, ROOM_WIDTH);
-			mazeGrid.push_back(newCell);
+			Cell newRoom(i, j, ROOM_WIDTH);
+			mazeGrid.push_back(newRoom);
 		}
 	}
 
@@ -33,7 +83,7 @@ int main(int argc, char *argv[]) {
 	current->visit();
 
 	while (running) {
-		starting_tick = SDL_GetTicks();
+		/*starting_tick = SDL_GetTicks();*/
 
 
 		while (SDL_PollEvent(&event)) {
@@ -42,14 +92,9 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 		}
-		//SDL_Color grid_background = { 22, 22, 22, 255 }; // Barely Black
-		//SDL_Color grid_line_color = { 244, 164, 96, 255 }; // sand
-		SDL_SetRenderDrawColor(renderer, 0,0,0,SDL_ALPHA_OPAQUE);
+
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 		SDL_RenderClear(renderer);
-		
-
-
-		//Now here comes the fun Part
 
 		int next = checkNeighbours(mazeGrid, *current);
 		// If the current cell has any neighbours which have not been visited
@@ -57,32 +102,31 @@ int main(int argc, char *argv[]) {
 			// Choose randomly one of the unvisited neighbours
 			Cell &nextRoom = mazeGrid[next];
 			// Push the current cell to the stack
-			CellStack.push(current);
+			roomStack.push(current);
 			// Remove the wall between the current cell and the chosen cell
 			current->removeWalls(nextRoom);
 			// Make the chosen cell the current cell and mark it as visited
 			current = &nextRoom;
 			current->visit();
 		}
-		else if (!CellStack.empty())
-		{ 
-			// If stack is not empty
-	        // Pop a cell from the stack
-			Cell &previousRoom = *CellStack.top();
-			CellStack.pop();
+		else if (!roomStack.empty()) { // If stack is not empty
+	   // Pop a cell from the stack
+			Cell &previousRoom = *roomStack.top();
+			roomStack.pop();
 			// Make it the current cell
 			current = &previousRoom;
 		}
 
-		SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+		SDL_SetRenderDrawColor(renderer, 244, 164, 96, SDL_ALPHA_OPAQUE);
 		SDL_RenderClear(renderer);
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
 		for (Uint32 i = 0; i < mazeGrid.size(); i++) {
 			if (!mazeGrid[i].isVisited()) {
 				SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
 			}
-			else {
-				SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+			else
+			{
+				SDL_SetRenderDrawColor(renderer, 244, 164, 96, SDL_ALPHA_OPAQUE);
 			}
 			SDL_Rect rect{ mazeGrid[i].getX() * ROOM_WIDTH, mazeGrid[i].getY() * ROOM_WIDTH, ROOM_WIDTH, ROOM_WIDTH };
 			SDL_RenderFillRect(renderer, &rect);
@@ -90,14 +134,18 @@ int main(int argc, char *argv[]) {
 			mazeGrid[i].show(renderer);
 		}
 
-		SDL_SetRenderDrawColor(renderer, 55, 55, 55, SDL_ALPHA_OPAQUE);
+		SDL_SetRenderDrawColor(renderer, 244, 164, 96, SDL_ALPHA_OPAQUE);
 		int xCoordHead = current->getX() * ROOM_WIDTH;
 		int yCoordHead = current->getY() * ROOM_WIDTH;
 		SDL_Rect rect{ xCoordHead, yCoordHead, ROOM_WIDTH, ROOM_WIDTH };
 		SDL_RenderFillRect(renderer, &rect);
 		SDL_RenderPresent(renderer);
 
-		cap_framerate(starting_tick);
+
 	}
-	exit();
+
+
+	SDL_DestroyWindow(window);
+	SDL_Quit();
+	return 0;
 }
