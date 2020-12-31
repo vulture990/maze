@@ -3,7 +3,7 @@
 
 ## 1 step : DONE
      Generate a maze 
-     ![xd](Project1/xd.png)
+     ![xd](img/xd.png)
      
 
 ## 2 step : ON GOING
