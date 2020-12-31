@@ -11,7 +11,6 @@ public:
 	void removeWall(int cell);
 	void removeWalls(Cell &c);//pass by reference
 	void show(SDL_Renderer* renderer);
-	//void printWalls();
 	void visit();
 	int getPositionInVector(int size);
 	int getX();
